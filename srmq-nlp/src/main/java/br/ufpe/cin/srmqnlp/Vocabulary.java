@@ -25,6 +25,10 @@ public class Vocabulary {
 		bufw.close();
 	}
 	
+	public int size() {
+		return this.wordToIndex.size();
+	}
+	
 	public Vocabulary(File wordListFile) throws IOException {
 		this(wordListFile, Locale.getDefault());
 	}
