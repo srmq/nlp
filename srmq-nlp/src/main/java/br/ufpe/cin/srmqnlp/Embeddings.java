@@ -38,6 +38,10 @@ public class Embeddings {
 		return result;
 	}
 	
+	public float[] embeddingFor(int id) {
+		return this.embeds[id - 1];
+	}
+	
 	public int vecSize() {
 		return vecSize;
 	}
