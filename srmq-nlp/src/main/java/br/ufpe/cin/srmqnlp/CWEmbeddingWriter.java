@@ -16,7 +16,7 @@ import edu.stanford.nlp.process.Tokenizer;
  */
 public class CWEmbeddingWriter 
 {
-	public static final String SENNA_PATH = "C:/Users/Sergio/Dropbox/CIn/research/textmining/devel/senna"; 
+	public static final String SENNA_PATH = "C:/Users/Sergio/Documents/My Dropbox/CIn/research/textmining/devel/senna"; 
 	public static final String CW_EMBEDDINGS = SENNA_PATH + "/embeddings/embeddings.txt";
 	public static final String CW_WORDS = SENNA_PATH + "/hash/words.lst";
 	

@@ -34,7 +34,7 @@ public class RecursiveCWIndexWriter {
 			System.err.println("Application does not have read permissions to baseInputPath");
 			System.exit(-4);
 		}
-		if (!baseInputPath.canWrite()) {
+		if (!baseOutputPath.canWrite()) {
 			System.err.println("Application does not have write permissions to baseOutputPath");
 			System.exit(-5);
 		}
@@ -54,7 +54,7 @@ public class RecursiveCWIndexWriter {
 			} else {
 				BufferedReader bufr = new BufferedReader(new FileReader(file));
 				BufferedWriter bufw = new BufferedWriter(new FileWriter(new File(baseOutputPath.getCanonicalPath() + File.separator + name)));
-				
+				cwWriter.cwIndicesForDocument(bufr, bufw);
 				bufw.close();
 				bufr.close();
 			}
