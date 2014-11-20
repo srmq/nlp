@@ -19,8 +19,8 @@ public class Embeddings {
 		for (int i = 0; i < vocabSize; i++) {
 			final String line = bufw.readLine();
 			this.embeds[i] = new float[vecSize];
+			final StringTokenizer strTok = new StringTokenizer(line);
 			for (int j = 0; j < vecSize; j++) {
-				final StringTokenizer strTok = new StringTokenizer(line);
 				final String nextToken = strTok.nextToken();
 				final float value = Float.parseFloat(nextToken);
 				this.embeds[i][j] = value;
