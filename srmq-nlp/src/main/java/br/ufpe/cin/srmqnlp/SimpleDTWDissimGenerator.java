@@ -1,0 +1,83 @@
+package br.ufpe.cin.srmqnlp;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.rosuda.REngine.REXP;
+import org.rosuda.REngine.REXPMismatchException;
+import org.rosuda.REngine.Rserve.RConnection;
+import org.rosuda.REngine.Rserve.RserveException;
+
+public class SimpleDTWDissimGenerator {
+public static void main(String[] args) throws IOException, RserveException, REXPMismatchException {
+	if (args.length != 1) {
+		System.err.println("Should give parent directory of files as argument");
+		System.exit(-1);
+	}
+	File parentDir = new File(args[0]);
+	if (!parentDir.isDirectory()) {
+		System.err.println("Argument given is not a directory");
+		System.exit(-2);
+	}
+	if (!parentDir.canRead()) {
+		System.err.println("Cannot read from given directory");
+		System.exit(-3);
+		
+	}
+	File []subFiles = parentDir.listFiles();
+	List<File> clusters = new ArrayList<File>(subFiles.length);
+	for (int i = 0; i < subFiles.length; i++) {
+		final File f = subFiles[i];
+		if (f.isDirectory()) {
+			clusters.add(f);
+		}
+	}
+	Collections.sort(clusters);
+	List<File> allFiles = new ArrayList<File>();
+	for (int c = 0; c < clusters.size(); c++) {
+		File []textFiles = clusters.get(c).listFiles();
+		Arrays.sort(textFiles);
+		for (File file : textFiles) {
+			if (file.isFile()) {
+				allFiles.add(file);
+				System.out.println(c + ",\"" + file.getParentFile().getName() + File.separator + file.getName() + "\"");
+			}
+		}
+	}
+	//System.out.println("total files: " + allFiles.size());
+
+	Vocabulary vocab = new Vocabulary(new File(CWEmbeddingWriter.CW_WORDS));
+	Embeddings embed = new Embeddings(new File(CWEmbeddingWriter.CW_EMBEDDINGS), vocab, 50);
+	EnStopWords stopWords = new EnStopWords(vocab);
+	TokenIndexDocumentProcessor docProcessor = new TokenIndexDocumentProcessor(CWEmbeddingWriter.UNK_WORD_ID);
+	RConnection rConn = new RConnection();
+	rConn.voidEval("library(\"dtw\")");
+	for (int me = 0; me < allFiles.size(); me++) {
+		double[][] myEmbeddings = docProcessor.toEmbeddings(allFiles.get(me), embed, stopWords);
+		REXP embedDoc = REXP.createDoubleMatrix(myEmbeddings);
+		rConn.assign("myEmbeds", embedDoc);
+		embedDoc = null;
+		for (int other = 0; other < me; other++) {
+			double[][] otherEmbeddings = docProcessor.toEmbeddings(allFiles.get(other), embed, stopWords);
+			embedDoc = REXP.createDoubleMatrix(otherEmbeddings);
+			rConn.assign("otherEmbeds", embedDoc);
+			embedDoc = null;
+			if (myEmbeddings.length > otherEmbeddings.length) {
+				rConn.voidEval("OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)");
+			} else {
+				rConn.voidEval("OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)");
+			}
+			final double distance = rConn.eval("OAlign$normalizedDistance").asDouble();
+			System.out.print(distance + ",");
+
+		}
+		System.out.println("0.0");
+	}
+	rConn.close();
+} 
+
+}
