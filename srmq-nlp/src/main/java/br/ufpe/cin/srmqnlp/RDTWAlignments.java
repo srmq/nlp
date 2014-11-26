@@ -2,7 +2,6 @@ package br.ufpe.cin.srmqnlp;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
@@ -21,11 +20,22 @@ public static void main(String[] args) throws RserveException, REXPMismatchExcep
 	EnStopWords stopWords = new EnStopWords(vocab);
 	
 	double[][] result = docProcessor.toEmbeddings(tokenDocument, embed, stopWords);
-	REXP embedDocA = REXP.createDoubleMatrix(result);
-	c.assign("docA", embedDocA);
+	REXP embedDoc = REXP.createDoubleMatrix(result);
+	c.assign("docA", embedDoc);
+	
+	tokenDocument = new File("/home/srmq/Dropbox/CIn/research/textmining/devel/data/20_newsgroups-noheaders-indices/alt.atheism/54257");
+	result = docProcessor.toEmbeddings(tokenDocument, embed, stopWords);
+	embedDoc = REXP.createDoubleMatrix(result);
+	c.assign("docB", embedDoc);
+	
 	REXP teste = c.eval("length(docA)");
 	System.out.println(teste.asString());
+	
+	teste = c.eval("length(docB)");
+	System.out.println(teste.asString());
+	c.voidEval("save.image(\"/home/srmq/testDocs.RData\")");
 	System.out.println("All done");
+
 	 
 }
 }
