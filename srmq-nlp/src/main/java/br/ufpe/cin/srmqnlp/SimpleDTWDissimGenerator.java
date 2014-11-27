@@ -9,11 +9,11 @@ import java.util.List;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
+import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
-import org.rosuda.REngine.Rserve.RserveException;
 
 public class SimpleDTWDissimGenerator {
-public static void main(String[] args) throws IOException, RserveException, REXPMismatchException {
+public static void main(String[] args) throws IOException, REXPMismatchException, REngineException {
 	if (args.length != 1) {
 		System.err.println("Should give parent directory of files as argument");
 		System.exit(-1);
@@ -66,12 +66,20 @@ public static void main(String[] args) throws IOException, RserveException, REXP
 			embedDoc = REXP.createDoubleMatrix(otherEmbeddings);
 			rConn.assign("otherEmbeds", embedDoc);
 			embedDoc = null;
+			String myCode;
+			double distance = -1.0;
 			if (myEmbeddings.length > otherEmbeddings.length) {
-				rConn.voidEval("OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)");
+				myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 			} else {
-				rConn.voidEval("OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)");
+				myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 			}
-			final double distance = rConn.eval("OAlign$normalizedDistance").asDouble();
+			final REXP r = rConn.parseAndEval("try("+myCode+",silent=TRUE)");
+			if (r.inherits("try-error")) { 
+				System.err.println("Error: "+r.asString());
+			} else {
+				distance = rConn.eval("OAlign$normalizedDistance").asDouble();
+			}
+ 
 			System.out.print(distance + ",");
 
 		}
