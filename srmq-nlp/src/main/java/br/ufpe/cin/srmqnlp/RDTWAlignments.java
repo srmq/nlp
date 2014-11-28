@@ -2,7 +2,6 @@ package br.ufpe.cin.srmqnlp;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
