@@ -63,23 +63,26 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 		embedDoc = null;
 		for (int other = 0; other < me; other++) {
 			double[][] otherEmbeddings = docProcessor.toEmbeddings(allFiles.get(other), embed, stopWords);
+			final boolean hasZeroLengthDoc = myEmbeddings.length == 0 || otherEmbeddings.length == 0;
 			embedDoc = REXP.createDoubleMatrix(otherEmbeddings);
 			rConn.assign("otherEmbeds", embedDoc);
 			embedDoc = null;
 			String myCode;
 			double distance = -1.0;
-			if (myEmbeddings.length > otherEmbeddings.length) {
-				myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
-			} else {
-				myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+			if (!hasZeroLengthDoc) {
+				distance = -1.1;
+				if (myEmbeddings.length > otherEmbeddings.length) {
+					myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+				} else {
+					myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+				}
+				final REXP r = rConn.parseAndEval("try("+myCode+",silent=TRUE)");
+				if (r.inherits("try-error")) { 
+					System.err.println("Error: "+r.asString());
+				} else {
+					distance = rConn.eval("OAlign$normalizedDistance").asDouble();
+				}
 			}
-			final REXP r = rConn.parseAndEval("try("+myCode+",silent=TRUE)");
-			if (r.inherits("try-error")) { 
-				System.err.println("Error: "+r.asString());
-			} else {
-				distance = rConn.eval("OAlign$normalizedDistance").asDouble();
-			}
- 
 			System.out.print(distance + ",");
 
 		}
