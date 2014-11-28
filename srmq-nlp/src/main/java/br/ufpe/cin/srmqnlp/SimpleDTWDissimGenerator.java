@@ -83,6 +83,7 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 			System.out.print(distance + ",");
 
 		}
+		rConn.voidEval("gc()");
 		System.out.println("0.0");
 	}
 	rConn.close();
