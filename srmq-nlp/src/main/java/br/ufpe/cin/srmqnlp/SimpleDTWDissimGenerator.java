@@ -56,6 +56,7 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 	TokenIndexDocumentProcessor docProcessor = new TokenIndexDocumentProcessor(CWEmbeddingWriter.UNK_WORD_ID);
 	RConnection rConn = new RConnection();
 	rConn.voidEval("library(\"dtw\")");
+	byte gcCount = 0;
 	for (int me = 0; me < allFiles.size(); me++) {
 		double[][] myEmbeddings = docProcessor.toEmbeddings(allFiles.get(me), embed, stopWords);
 		REXP embedDoc = REXP.createDoubleMatrix(myEmbeddings);
@@ -84,9 +85,12 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 				}
 			}
 			System.out.print(distance + ",");
-
+			if (++gcCount % 100 == 0){
+				rConn.voidEval("gc()");
+				gcCount = 0;
+			}
 		}
-		rConn.voidEval("gc()");
+		
 		System.out.println("0.0");
 	}
 	rConn.close();
