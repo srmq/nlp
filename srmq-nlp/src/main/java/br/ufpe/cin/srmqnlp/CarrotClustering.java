@@ -2,13 +2,21 @@ package br.ufpe.cin.srmqnlp;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
+import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
+import org.carrot2.core.Cluster;
+import org.carrot2.core.Controller;
+import org.carrot2.core.ControllerFactory;
 import org.carrot2.core.Document;
+import org.carrot2.core.ProcessingResult;
+import org.carrot2.core.attribute.CommonAttributesDescriptor;
 
 public class CarrotClustering {
 	
@@ -22,7 +30,7 @@ public class CarrotClustering {
 		this.dissimFile = dissimFile;
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		if (args.length != 3) {
 			System.err.println("Should give 3 arguments: numberOfObjects basePath dissimFile");
 			System.exit(-1);
@@ -31,6 +39,7 @@ public class CarrotClustering {
 		final String baseP = args[1];
 		final String dissimF = args[2];
 		CarrotClustering cClust = new CarrotClustering(nObjects, baseP, dissimF);
+		cClust.cluster();
 
 	}
 	
@@ -41,8 +50,29 @@ public class CarrotClustering {
 			bufr = new BufferedReader(new FileReader(this.dissimFile));
 			for (int i = 0; i < this.numberOfObjects; i++) {
 				final String line = bufr.readLine();
-				//FIXME continuar
+				StringTokenizer sttok = new StringTokenizer(line, "\"");
+				sttok.nextToken();
+				String docId = sttok.nextToken();
+				File docFile = new File(this.basePath + File.separator + docId);
+				StringBuffer stb = new StringBuffer((int)docFile.length());
+				BufferedReader bufrFile = new BufferedReader(new FileReader(docFile));
+				String lineFile;
+				while ((lineFile = bufrFile.readLine()) != null) {
+					stb.append(lineFile);
+					stb.append(' ');
+				}
+				bufrFile.close();
+				Document carrotDocument = new Document(stb.toString());
+				docsAndIds.put(carrotDocument,	docId);
 			}
+			final Controller controller = ControllerFactory.createSimple();
+			final Map<String, Object> attributes = new HashMap<String, Object>();
+			attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsAndIds.keySet()));
+			attributes.put("BisectingKMeansClusteringAlgorithm.clusterCount", 20);
+			ProcessingResult result = controller.process(attributes, BisectingKMeansClusteringAlgorithm.class);
+			List<Cluster> clusters = result.getClusters();
+			CarrotConsoleFormatter.displayClusters(clusters);
+			
 		} finally {
 			if (bufr != null) bufr.close();
 		}
