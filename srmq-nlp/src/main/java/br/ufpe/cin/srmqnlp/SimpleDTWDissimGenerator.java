@@ -14,8 +14,8 @@ import org.rosuda.REngine.Rserve.RConnection;
 
 public class SimpleDTWDissimGenerator {
 public static void main(String[] args) throws IOException, REXPMismatchException, REngineException {
-	if (args.length != 1) {
-		System.err.println("Should give parent directory of files as argument");
+	if (args.length < 1 || args.length > 2) {
+		System.err.println("Should give parent directory of files as argument [and distance function default: Euclidean]");
 		System.exit(-1);
 	}
 	File parentDir = new File(args[0]);
@@ -28,6 +28,8 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 		System.exit(-3);
 		
 	}
+	final String distanceFunction = (args.length == 1) ? "Euclidean" : args[1];
+	
 	File []subFiles = parentDir.listFiles();
 	List<File> clusters = new ArrayList<File>(subFiles.length);
 	for (int i = 0; i < subFiles.length; i++) {
@@ -73,9 +75,9 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 			if (!hasZeroLengthDoc) {
 				distance = -1.1;
 				if (myEmbeddings.length > otherEmbeddings.length) {
-					myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+					myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"" + distanceFunction + "\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 				} else {
-					myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"Euclidean\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+					myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"" + distanceFunction + "\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 				}
 				final REXP r = rConn.parseAndEval("try("+myCode+",silent=TRUE)");
 				if (r.inherits("try-error")) { 
@@ -89,6 +91,7 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 				rConn.voidEval("gc()");
 				gcCount = 0;
 			}
+			rConn.voidEval("rm(otherEmbeds)");
 		}
 		
 		System.out.println("0.0");
