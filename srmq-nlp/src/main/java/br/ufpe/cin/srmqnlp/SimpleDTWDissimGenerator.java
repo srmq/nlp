@@ -95,6 +95,7 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 		}
 		
 		System.out.println("0.0");
+		rConn.voidEval("rm(myEmbeds)");
 	}
 	rConn.close();
 } 
