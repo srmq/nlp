@@ -7,7 +7,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
+/**
+ * 
+ * The first line is the number of documents in the corpus.
+ * Then, the n-th line is the number of documents that contain the word with id n-1
+ * @author srmq
+ *
+ */
 public class DFWriter {
 
 	public static void main(String[] args)  throws IOException  {
