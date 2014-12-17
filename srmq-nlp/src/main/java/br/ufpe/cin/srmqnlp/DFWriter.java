@@ -6,7 +6,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 /**
  * 
  * The first line is the number of documents in the corpus.
@@ -30,38 +32,43 @@ public class DFWriter {
 			System.err.println("Application does not have read permissions to baseInputPath");
 			System.exit(-4);
 		}
-		Map<Integer, Integer> indexToOcurrenceCount = new HashMap<Integer, Integer>();
-		int filesSeen = recursiveProcess(baseInputPath, indexToOcurrenceCount);
-		final int maxIndex = Collections.max(indexToOcurrenceCount.keySet());
+		Map<Integer, Integer> indexToDF = new HashMap<Integer, Integer>();
+		int filesSeen = recursiveProcess(baseInputPath, indexToDF);
+		final int maxIndex = Collections.max(indexToDF.keySet());
 		System.out.println(filesSeen);
 		for (int i = 1; i <= maxIndex; i++) {
-			if (indexToOcurrenceCount.containsKey(i)) {
-				System.out.println(indexToOcurrenceCount.get(i));
+			if (indexToDF.containsKey(i)) {
+				System.out.println(indexToDF.get(i));
 			} else {
 				System.out.println("0");
 			}
 		}
 	}
 
-	private static int recursiveProcess(File baseInputPath, Map<Integer, Integer> indexToOcurrenceCount) throws IOException {
+	private static int recursiveProcess(File baseInputPath, Map<Integer, Integer> indexToDF) throws IOException {
 		int filesSeen = 0;
 		File[] stuffToProcess = baseInputPath.listFiles();
 		for (File file : stuffToProcess) {
 			if (file.isDirectory()) {
-				filesSeen += recursiveProcess(file, indexToOcurrenceCount);
+				filesSeen += recursiveProcess(file, indexToDF);
 			} else if (file.isFile()){
+				Set<Integer> ids = new HashSet<Integer>();
 				++filesSeen;
 				BufferedReader bufr = new BufferedReader(new FileReader(file));
 				String line;
 				while ((line = bufr.readLine()) != null) {
 					int index = Integer.parseInt(line);
-					if (indexToOcurrenceCount.containsKey(index)) {
-						final int count = indexToOcurrenceCount.get(index);
-						indexToOcurrenceCount.put(index, count+1);
+					ids.add(index);
+				}
+				for (Integer index : ids) {
+					if (indexToDF.containsKey(index)) {
+						final int docCount = indexToDF.get(index);
+						indexToDF.put(index, docCount+1);
 					} else {
-						indexToOcurrenceCount.put(index, 1);
+						indexToDF.put(index, 1);
 					}
 				}
+
 				bufr.close();
 			} else {
 				throw new IllegalStateException("Found something that is not a file nor a directory");
