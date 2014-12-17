@@ -13,6 +13,22 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 
 public class SimpleDTWDissimGenerator {
+/*
+ library("inline")
+ src <- '
+    Rcpp::NumericVector xa(a);
+    Rcpp::NumericVector xb(b);
+    int n = xa.size();
+    double dist = 0.0;
+    for (int i = 0; i < n; i++) {
+	const double idist = xa[i] - xb[i];
+	dist += idist*idist;
+    }
+    return Rcpp::wrap(sqrt(dist));
+'
+fun <- cxxfunction(signature(a = "numeric", b = "numeric"), src, plugin="Rcpp")
+ */
+	
 public static void main(String[] args) throws IOException, REXPMismatchException, REngineException {
 	if (args.length < 1 || args.length > 2) {
 		System.err.println("Should give parent directory of files as argument [and distance function default: Euclidean]");
