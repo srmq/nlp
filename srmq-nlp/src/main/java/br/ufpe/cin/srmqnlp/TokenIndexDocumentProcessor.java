@@ -112,9 +112,8 @@ public class TokenIndexDocumentProcessor {
 			}
 			if (genTfIdf) {
 				for (int tokenI = 0; tokenI < numberOfTokens; tokenI++) {
-					double tokenTf = tf.get(tokens.get(i));
-					tokenTf /= (double)i;
-					double tokenIdf = Math.log((double)df.getnDocs()/(double)df.dfOfIndex(tokens.get(i)));
+					double tokenTf = tf.get(tokens.get(tokenI));
+					double tokenIdf = Math.log((double)df.getnDocs()/(double)df.dfOfIndex(tokens.get(tokenI)));
 					result[tokenI][0] = tokenTf;
 					result[tokenI][1] = tokenIdf;
 				}

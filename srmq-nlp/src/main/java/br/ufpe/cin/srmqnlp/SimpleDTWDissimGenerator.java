@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
@@ -13,6 +15,30 @@ import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 
 public class SimpleDTWDissimGenerator {
+	private static Map<String, String[]> customDistFunctions;
+	
+	static {
+		customDistFunctions = new HashMap<String, String[]>(); // maps from function name to function code
+		String meanWfIdfEuclidian = "meanWfIdfEuclidian";
+		String[] meanWfIdfEuclidianCode = {"src <- '" +  
+											"Rcpp::NumericVector xa(a); " +
+											"Rcpp::NumericVector xb(b); " +
+											"int n = xa.size(); " +
+											"double dist = 0.0; " +
+											"for (int i = 2; i < n; i++) { " +
+												"const double idist = xa[i] - xb[i]; " +
+												"dist += idist*idist; " +
+											"} "						   +
+											"const double wfdfA = (xa[0] > 0) ? (1.0 + log(xa[0])) : 0.0; " +
+											"const double wfdfB = (xb[0] > 0) ? (1.0 + log(xb[0])) : 0.0; " +
+											"const double meanWfIdf = ((wfdfA * xa[1]) + (wfdfB * xb[1]))*0.5; " +
+											"return Rcpp::wrap(meanWfIdf * sqrt(dist)); " +
+											"'",
+										"meanWfIdfEuclidian <- cxxfunction(signature(a = \"numeric\", b = \"numeric\"), src, plugin=\"Rcpp\")",
+										"pr_DB$set_entry(FUN = meanWfIdfEuclidian, names = c(\"test_meanWfIdfEuclidian\", \"meanWfIdfEuclidian\"))",
+										"rm(src)"};
+		customDistFunctions.put(meanWfIdfEuclidian, meanWfIdfEuclidianCode);
+	}
 /*
  library("inline")
  src <- '
@@ -21,8 +47,8 @@ public class SimpleDTWDissimGenerator {
     int n = xa.size();
     double dist = 0.0;
     for (int i = 0; i < n; i++) {
-	const double idist = xa[i] - xb[i];
-	dist += idist*idist;
+	    const double idist = xa[i] - xb[i];
+	    dist += idist*idist;
     }
     return Rcpp::wrap(sqrt(dist));
 '
@@ -30,8 +56,8 @@ fun <- cxxfunction(signature(a = "numeric", b = "numeric"), src, plugin="Rcpp")
  */
 	
 public static void main(String[] args) throws IOException, REXPMismatchException, REngineException {
-	if (args.length < 1 || args.length > 2) {
-		System.err.println("Should give parent directory of files as argument [and distance function default: Euclidean]");
+	if (args.length < 1 || args.length > 3) {
+		System.err.println("Should give parent directory of files as argument [plus distance function default: Euclidean and df file (if custom)]");
 		System.exit(-1);
 	}
 	File parentDir = new File(args[0]);
@@ -46,6 +72,12 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 	}
 	final String distanceFunction = (args.length == 1) ? "Euclidean" : args[1];
 	
+	
+	
+	boolean useCustomTfIdf = (args.length == 3);
+	
+	File dfFile = null;
+	if (useCustomTfIdf) dfFile = new File(args[2]);
 	File []subFiles = parentDir.listFiles();
 	List<File> clusters = new ArrayList<File>(subFiles.length);
 	for (int i = 0; i < subFiles.length; i++) {
@@ -72,16 +104,32 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 	Embeddings embed = new Embeddings(new File(CWEmbeddingWriter.CW_EMBEDDINGS), vocab, 50);
 	EnStopWords stopWords = new EnStopWords(vocab);
 	TokenIndexDocumentProcessor docProcessor = new TokenIndexDocumentProcessor(CWEmbeddingWriter.UNK_WORD_ID);
+	TokenIndexDocumentProcessor.DFMapping dfMapping = null;
+	if (useCustomTfIdf) dfMapping = docProcessor.generateDFMapping(dfFile);
 	RConnection rConn = new RConnection();
 	rConn.voidEval("library(\"dtw\")");
+	if (useCustomTfIdf) { 
+		rConn.voidEval("library(\"inline\")");
+		if (!customDistFunctions.containsKey(distanceFunction)) {
+			throw new IllegalStateException("Custom function " + distanceFunction + " does not exist");
+		}
+		String[] codeToExecute = customDistFunctions.get(distanceFunction);
+		for (String codeLine : codeToExecute) {
+			rConn.voidEval(codeLine);
+		}
+	}
 	byte gcCount = 0;
 	for (int me = 0; me < allFiles.size(); me++) {
-		double[][] myEmbeddings = docProcessor.toEmbeddings(allFiles.get(me), embed, stopWords);
+		double[][] myEmbeddings;
+		if (!useCustomTfIdf) myEmbeddings = docProcessor.toEmbeddings(allFiles.get(me), embed, stopWords);
+		else myEmbeddings = docProcessor.toEmbeddings(allFiles.get(me), embed, stopWords, dfMapping);
 		REXP embedDoc = REXP.createDoubleMatrix(myEmbeddings);
 		rConn.assign("myEmbeds", embedDoc);
 		embedDoc = null;
 		for (int other = 0; other < me; other++) {
-			double[][] otherEmbeddings = docProcessor.toEmbeddings(allFiles.get(other), embed, stopWords);
+			double[][] otherEmbeddings;
+			if (!useCustomTfIdf) otherEmbeddings = docProcessor.toEmbeddings(allFiles.get(other), embed, stopWords);
+			else otherEmbeddings = docProcessor.toEmbeddings(allFiles.get(other), embed, stopWords, dfMapping);
 			final boolean hasZeroLengthDoc = myEmbeddings.length == 0 || otherEmbeddings.length == 0;
 			embedDoc = REXP.createDoubleMatrix(otherEmbeddings);
 			rConn.assign("otherEmbeds", embedDoc);
@@ -90,10 +138,11 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 			double distance = -1.0;
 			if (!hasZeroLengthDoc) {
 				distance = -1.1;
+				String method = "\"" + distanceFunction + "\"";
 				if (myEmbeddings.length > otherEmbeddings.length) {
-					myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=\"" + distanceFunction + "\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+					myCode = "OAlign <- dtw(otherEmbeds, myEmbeds, dist.method=" + method + ", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 				} else {
-					myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=\"" + distanceFunction + "\", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
+					myCode = "OAlign <- dtw(myEmbeds, otherEmbeds, dist.method=" + method + ", step=asymmetric, distance.only=TRUE, open.begin=TRUE, open.end=TRUE)"; 
 				}
 				final REXP r = rConn.parseAndEval("try("+myCode+",silent=TRUE)");
 				if (r.inherits("try-error")) { 
