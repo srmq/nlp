@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class TokenIndexDocumentProcessor {
@@ -60,26 +62,61 @@ public class TokenIndexDocumentProcessor {
 	}
 	
 	public double[][] toEmbeddings(File tokenIndexDocument, Embeddings embed, EnStopWords stopWords, DFMapping df) throws IOException {
-		//FIXME continuar gerando embeddings com tf idf na primeira posicao se df nao for null
+		//FIXME testar geracao de tf idf
+		final boolean genTfIdf = (df != null);
 		int numberOfTokens = countValidTokens(tokenIndexDocument, stopWords);
-		double[][] result = new double[numberOfTokens][embed.vecSize()];
+		int vecSize = embed.vecSize();
+		if (genTfIdf) vecSize += 2;
+		double[][] result = new double[numberOfTokens][vecSize];
 		
 		BufferedReader buf = new BufferedReader(new FileReader(tokenIndexDocument));
 		try {
 			String line;
 			int i = 0;
+			Map<Integer, Double> tf = null;
+			List<Integer> tokens = null;
+			if (genTfIdf) { 
+				tf = new HashMap<Integer, Double>();
+				tokens = new ArrayList<Integer>();
+			}
 			while ((line = buf.readLine()) != null) {
 				int id = Integer.parseInt(line);
 				if (id != unknownWordId) {
 					if (stopWords != null) {
 						if (!stopWords.isStopWordIndex(id)) {
-							fillEmbedRow(i, result, embed, id);
+							fillEmbedRow(i, result, embed, id, genTfIdf);
+							if (genTfIdf) {
+								double freqId = 0.0;
+								if (tf.containsKey(id)) {
+									freqId = tf.get(id);
+								}
+								tf.put(id, freqId + 1.0);
+								tokens.add(id);
+							}
 							++i;
 						}
 					} else {
-						fillEmbedRow(i, result, embed, id);
+						fillEmbedRow(i, result, embed, id, genTfIdf);
+						if (genTfIdf) {
+							double freqId = 0.0;
+							if (tf.containsKey(id)) {
+								freqId = tf.get(id);
+							}
+							tf.put(id, freqId + 1.0);
+							tokens.add(id);
+						}
+
 						++i;
 					}
+				}
+			}
+			if (genTfIdf) {
+				for (int tokenI = 0; tokenI < numberOfTokens; tokenI++) {
+					double tokenTf = tf.get(tokens.get(i));
+					tokenTf /= (double)i;
+					double tokenIdf = Math.log((double)df.getnDocs()/(double)df.dfOfIndex(tokens.get(i)));
+					result[tokenI][0] = tokenTf;
+					result[tokenI][1] = tokenIdf;
 				}
 			}
 			
@@ -90,10 +127,14 @@ public class TokenIndexDocumentProcessor {
 	}
 
 	private void fillEmbedRow(int row, double[][] result, Embeddings embed,
-			int id) {
+			int id, boolean genTfIdf) {
 		float[] embeds = embed.embeddingFor(id);
 		for (int k = 0; k < embeds.length; k++) {
-			result[row][k] = embeds[k];
+			if (!genTfIdf) {
+				result[row][k] = embeds[k];
+			} else {
+				result[row][k+2] = embeds[k];
+			}
 		}
 		
 	}
