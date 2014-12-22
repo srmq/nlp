@@ -19,25 +19,54 @@ public class SimpleDTWDissimGenerator {
 	
 	static {
 		customDistFunctions = new HashMap<String, String[]>(); // maps from function name to function code
-		String meanWfIdfEuclidian = "meanWfIdfEuclidian";
-		String[] meanWfIdfEuclidianCode = {"src <- '" +  
-											"Rcpp::NumericVector xa(a); " +
-											"Rcpp::NumericVector xb(b); " +
-											"int n = xa.size(); " +
-											"double dist = 0.0; " +
-											"for (int i = 2; i < n; i++) { " +
-												"const double idist = xa[i] - xb[i]; " +
-												"dist += idist*idist; " +
-											"} "						   +
-											"const double wfdfA = (xa[0] > 0) ? (1.0 + log(xa[0])) : 0.0; " +
-											"const double wfdfB = (xb[0] > 0) ? (1.0 + log(xb[0])) : 0.0; " +
-											"const double meanWfIdf = ((wfdfA * xa[1]) + (wfdfB * xb[1]))*0.5; " +
-											"return Rcpp::wrap(meanWfIdf * sqrt(dist)); " +
-											"'",
-										"meanWfIdfEuclidian <- cxxfunction(signature(a = \"numeric\", b = \"numeric\"), src, plugin=\"Rcpp\")",
-										"pr_DB$set_entry(FUN = meanWfIdfEuclidian, names = c(\"test_meanWfIdfEuclidian\", \"meanWfIdfEuclidian\"))",
-										"rm(src)"};
-		customDistFunctions.put(meanWfIdfEuclidian, meanWfIdfEuclidianCode);
+		{ // Custom Euclidian with log(tf)*idf weighting (mean of the two words)
+			String meanWfIdfEuclidian = "meanWfIdfEuclidian";
+			String[] meanWfIdfEuclidianCode = {"src <- '" +  
+												"Rcpp::NumericVector xa(a); " +
+												"Rcpp::NumericVector xb(b); " +
+												"int n = xa.size(); " +
+												"double dist = 0.0; " +
+												"for (int i = 2; i < n; i++) { " +
+													"const double idist = xa[i] - xb[i]; " +
+													"dist += idist*idist; " +
+												"} "						   +
+												"const double wfdfA = (xa[0] > 0) ? (1.0 + log(xa[0])) : 0.0; " +
+												"const double wfdfB = (xb[0] > 0) ? (1.0 + log(xb[0])) : 0.0; " +
+												"const double meanWfIdf = ((wfdfA * xa[1]) + (wfdfB * xb[1]))*0.5; " +
+												"return Rcpp::wrap(meanWfIdf * sqrt(dist)); " +
+												"'",
+											"meanWfIdfEuclidian <- cxxfunction(signature(a = \"numeric\", b = \"numeric\"), src, plugin=\"Rcpp\")",
+											"pr_DB$set_entry(FUN = meanWfIdfEuclidian, names = c(\"test_meanWfIdfEuclidian\", \"meanWfIdfEuclidian\"))",
+											"rm(src)"};
+			customDistFunctions.put(meanWfIdfEuclidian, meanWfIdfEuclidianCode);
+		}
+		
+		{ // Custom Cosine dist with log(tf)*idf weighting (mean of the two words)
+			String meanWfIdfCosineDist = "meanWfIdfCosineDist";
+			String[] meanWfIdfCosineDistCode = {"src <- '" +  
+												"Rcpp::NumericVector xa(a); " +
+												"Rcpp::NumericVector xb(b); " +
+												"int n = xa.size(); " +
+												"double sumAiBi = 0.0, aiSq = 0.0, biSq = 0.0; " +
+												"for (int i = 2; i < n; i++) { " +
+													"sumAiBi += xa[i] * xb[i]; " +
+													"aiSq += xa[i] * xa[i]; " +
+													"biSq += xb[i] * xb[i]; " +
+												"} "						   +
+												"const double cosine = sumAiBi / (sqrt(aiSq)*sqrt(biSq)); " +
+												"const double cosineDist =  1.0 - (1.0 + cosine)*0.5; " +
+												"const double wfdfA = (xa[0] > 0) ? (1.0 + log(xa[0])) : 0.0; " +
+												"const double wfdfB = (xb[0] > 0) ? (1.0 + log(xb[0])) : 0.0; " +
+												"const double meanWfIdf = ((wfdfA * xa[1]) + (wfdfB * xb[1]))*0.5; " +
+												"return Rcpp::wrap(meanWfIdf * cosineDist); " +
+												"'",
+											"meanWfIdfCosineDist <- cxxfunction(signature(a = \"numeric\", b = \"numeric\"), src, plugin=\"Rcpp\")",
+											"pr_DB$set_entry(FUN = meanWfIdfCosineDist, names = c(\"test_meanWfIdfCosineDist\", \"meanWfIdfCosineDist\"))",
+											"rm(src)"};
+			customDistFunctions.put(meanWfIdfCosineDist, meanWfIdfCosineDistCode);
+		}
+		
+		
 	}
 /*
  library("inline")
