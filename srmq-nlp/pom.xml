@@ -42,6 +42,7 @@
 			<version>3.8.1</version>
 			<scope>test</scope>
 		</dependency>
+		 
 		<dependency>
 			<groupId>org.carrot2</groupId>
 			<artifactId>carrot2-core</artifactId>

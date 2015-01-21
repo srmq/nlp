@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
@@ -67,11 +68,30 @@ public class CarrotClustering {
 			}
 			final Controller controller = ControllerFactory.createSimple();
 			final Map<String, Object> attributes = new HashMap<String, Object>();
-			attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsAndIds.keySet()));
+			final Set<Document> docsToCluster = docsAndIds.keySet();
+			System.out.println("INFO: We have " + docsToCluster.size() + " documents to cluster");
+			attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsToCluster));
 			attributes.put("BisectingKMeansClusteringAlgorithm.clusterCount", 20);
 			ProcessingResult result = controller.process(attributes, BisectingKMeansClusteringAlgorithm.class);
 			List<Cluster> clusters = result.getClusters();
-			CarrotConsoleFormatter.displayClusters(clusters);
+			//CarrotConsoleFormatter.displayClusters(clusters);
+			int docCount = 0;
+			for (int i = 0; i < clusters.size(); i++) {
+				final Cluster clusterI = clusters.get(i);
+				if (clusterI.getSubclusters() != null && clusterI.getSubclusters().size() > 0) {
+					System.out.println("INFO: Cluster " + i + " has subclusters");
+				}
+				System.out.println("Cluster " + i + ":");
+				System.out.println(clusterI.getLabel());
+				List<Document> docs = clusterI.getAllDocuments();
+				docCount += docs.size();
+				for (Document document : docs) {
+					String docId = docsAndIds.get(document);
+					System.out.println(docId);
+				}
+				System.out.println("");
+			}
+			System.out.println("Total document count in clusters: " + docCount);
 			
 		} finally {
 			if (bufr != null) bufr.close();
