@@ -16,7 +16,7 @@ import org.rosuda.REngine.Rserve.RConnection;
 
 public class SimpleDTWDissimGenerator {
 	private static Map<String, String[]> customDistFunctions;
-	
+	// accepted distances: everything R (Euclidian, cosine...); meanWfIdfEuclidian, meanWfIdfCosineDist
 	static {
 		customDistFunctions = new HashMap<String, String[]>(); // maps from function name to function code
 		{ // Custom Euclidian with log(tf)*idf weighting (mean of the two words)

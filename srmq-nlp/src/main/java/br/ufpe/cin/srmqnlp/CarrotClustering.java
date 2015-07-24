@@ -81,7 +81,7 @@ public class CarrotClustering {
 			final Set<Document> docsToCluster = docsAndIds.keySet();
 			System.out.println("INFO: We have " + docsToCluster.size() + " documents to cluster");
 			attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsToCluster));
-			attributes.put("BisectingKMeansClusteringAlgorithm.clusterCount", 20);
+			attributes.put("BisectingKMeansClusteringAlgorithm.clusterCount", k);
 			ProcessingResult result = controller.process(attributes, BisectingKMeansClusteringAlgorithm.class);
 			timeInMilis = System.currentTimeMillis() - timeInMilis;
 			List<Cluster> clusters = result.getClusters();
