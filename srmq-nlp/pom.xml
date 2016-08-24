@@ -56,6 +56,13 @@
 			<artifactId>carrot2-core</artifactId>
 			<version>3.10.1</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.googlecode.matrix-toolkits-java</groupId>
+			<artifactId>mtj</artifactId>
+			<version>1.0.2</version>
+		</dependency>
+		
 		<!-- 
 		<dependency>
 			<groupId>org.slf4j</groupId>

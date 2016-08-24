@@ -15,8 +15,7 @@ public class Word2VecDistanceReader {
 		
 		long words = readLongText(googleData);
 		int embedSize = (int)readLongText(googleData);
-		System.out.println("Existem " + words + " words");
-		System.out.println("O tamanho dos embeddings e' " + embedSize);
+		System.out.print(words + " " + embedSize);
 
 		byte floatBytes[] = new byte[4];
 
@@ -30,8 +29,9 @@ public class Word2VecDistanceReader {
 				}
 				final float f = ByteBuffer.wrap(floatBytes).order(ByteOrder.LITTLE_ENDIAN).getFloat();
 				embed[i] = f;
+				System.out.print(" " + f);
 			}
-			System.out.println(" " + Arrays.toString(embed));
+			//System.out.println(" " + Arrays.toString(embed));
 		}
 
 	
