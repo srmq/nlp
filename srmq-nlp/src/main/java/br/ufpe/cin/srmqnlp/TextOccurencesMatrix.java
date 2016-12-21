@@ -1,86 +1,20 @@
 package br.ufpe.cin.srmqnlp;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Collections;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
 
-import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.Matrix;
-import no.uib.cipr.matrix.MatrixEntry;
-import no.uib.cipr.matrix.sparse.LinkedSparseMatrix;
 
-public class TextOccurencesMatrix {
-	private Map<String, Integer> docToIndices;
-	private Matrix mat;
+public class TextOccurencesMatrix extends TextFilesToMatrix {
 	
-	/**
-	 * 
-	 * @param vocabSize the number of words in the vocabulary. Indices are assumed to be from 1 to <code>vocabSize</code>
-	 */
 	public TextOccurencesMatrix(File basePath, int vocabSize) throws IOException {
-		this.docToIndices = new HashMap<String, Integer>();
-		computeMatrix(basePath, vocabSize);
+		super(basePath, vocabSize);
 	}
 
-	/**
-	 * 
-	 * @param basePath indices text files are in this path (or subdirs of it)
-	 * @param vocabSize the number of words in the vocabulary. Indices are assumed to be from 1 to <code>vocabSize</code>
-	 * @return
-	 * @throws IOException 
-	 */
-	private void computeMatrix(File basePath, int vocabSize) throws IOException {
-		if(!basePath.isDirectory() || !basePath.canRead()) {
-			throw new IllegalArgumentException("basePath should be a readable directory");
-		}
-		List<File> filesToProcess = new LinkedList<File>();
-		findFilesToProcess(basePath, vocabSize, filesToProcess);
-		Collections.shuffle(filesToProcess, new Random(1));
-		this.mat = new LinkedSparseMatrix(vocabSize, filesToProcess.size());
-		{
-			int col = 0;
-			for (File f : filesToProcess) {
-				processFile(f, mat, col);
-				col++;
-			}
-		}
-	}
-	
-	public void printOccurencesMatrix(OutputStream os) {
-        // Output into coordinate format. Indices start from 1 instead of 0
-        try {
-			Formatter out = new Formatter(os, "UTF-8", Locale.US);
-	        out.format("%10d %10d %19d\n", this.mat.numRows(), this.mat.numColumns(),
-	                Matrices.cardinality(this.mat));
-
-	        for (MatrixEntry e : this.mat) {
-	            if (e.get() != 0)
-	                out.format("%10d %10d % .12e\n", e.row() + 1, e.column() + 1,
-	                        e.get());
-	        }
-	        out.flush();
-			out.close();
-		} catch (UnsupportedEncodingException e) {
-			throw new IllegalStateException(e);
-		}
-
-	}
-	
-	private void processFile(File f, Matrix mat, int col) throws IOException {
-		this.docToIndices.put(f.getPath(), col);
+	@Override
+	protected void processFile(File f, Matrix mat, int col) throws IOException {
 		BufferedReader bufR = new BufferedReader(new FileReader(f));
 		String line;
 		while ((line = bufR.readLine()) != null) {
@@ -89,22 +23,26 @@ public class TextOccurencesMatrix {
 			mat.add(index, col, 1.0);
 		}
 		bufR.close();
-		
 	}
 
-	private void findFilesToProcess(File fileOrDirToProcess, int vocabSize, List<File> filesToProcess) throws IOException {
-		if (fileOrDirToProcess.isDirectory()) {
-			File[] subFiles = fileOrDirToProcess.listFiles();
-			for (File file : subFiles) {
-				findFilesToProcess(file, vocabSize, filesToProcess);
-			}
-		} else {
-			filesToProcess.add(fileOrDirToProcess);
-		}
-	}
 	public static void main(String[] args) throws IOException{
-		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-indices-sample10";
-		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-occurMatrix.txt";
+		/**
+		 * 20 Newsgroups
+		 * final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-indices-sample10";
+		 * final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-occurMatrix.txt";
+		 * final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-matrixElements.txt";
+		 */
+		
+		/**
+		 * Reuters RT10
+		 * final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/sennaIndices/top10Categories";
+		 * final String outFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT10-LSA/reuters21578-RT10-OccurMatrix.txt";
+		 * final String elementListFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT10-LSA/reuters21578-RT10-OccurMatrix-Elements.txt";
+		 */
+
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/sennaIndices/top11MinusEarn";
+		final String outFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix-Elements.txt";
 		int vocabSize;
 		{
 			final String vocab = "/home/srmq/devel/senna/hash/words.lst";
@@ -115,14 +53,43 @@ public class TextOccurencesMatrix {
 		}
 		System.out.println("Vocabulary size is " + vocabSize);
 		TextOccurencesMatrix textMatrix = new TextOccurencesMatrix(new File(basePath), vocabSize);
-		BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(outFile));
-		textMatrix.printOccurencesMatrix(outStream);
-		outStream.close();
+		textMatrix.printOutputMatrix(outFile);
+		textMatrix.printElementList(elementListFile);
 		/*
 		 * Exemplo lendo no R como data.frame: 
 		 * 
-		 * newsgroupData <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-occurMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
+		 * library(Matrix)
+		 * library(irlba)
+		 * newsgroupSampleData <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-occurMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
+		 * newsgroupSampleData$val <- log(newsgroupSampleData$val)
+		 * newsgroupSampleData$val <- newsgroupSampleData$val + 1 //FIXME multiplicar por ln(n/(df_xi))
+		 * newsSampleMatrix <- sparseMatrix(i=newsgroupSampleData$row, j=newsgroupSampleData$col, x=newsgroupSampleData$val, dims=c(130000, 2009))
+		 * rm(newsgroupSampleData)
+
+		 * ndocs <- read.table("/home/srmq/git/nlp/srmq-nlp/experiments/20newsgroups-sample10-df.txt", header=FALSE, nrows=1, colClasses=c("numeric"))
+		 * ndocs <- ndocs[1, 1]
+		 * dfTable <- read.table("/home/srmq/git/nlp/srmq-nlp/experiments/20newsgroups-sample10-df.txt", header=FALSE, skip=1, colClasses=c("numeric"))
+		 * df <- rep(0, 130000)
+		 * df[1:129998] <- dfTable[,1]
+		 * rm(dfTable)
+		 * df <- ifelse(df != 0, log(ndocs/df), 0)
+		 * df <- as(df, "sparseVector")
+ 
 		 * 
+		 * partialSVD <- irlba(newsSampleMatrix, nv=50)
+		 * rm(newsSampleMatrix)
+		 * S <- sparseMatrix(i=c(1:50), j=c(1:50), x=partialSVD$d, dims=c(2009, 2009))
+		 * W <- sparseMatrix(i=rep(1:130000, times=50), j=rep(1:50,each=130000), x=c(partialSVD$u), dims=c(130000, 2009))
+		 * P <- sparseMatrix(i=rep(1:2009, times=50), j=rep(1:50,each=2009), x=c(partialSVD$v), dims=c(2009,2009))
+		 * rm(partialSVD)
+		 * X <- W %*% tcrossprod(S, P)
+		 * rm(P, S, W)
+		 * X <- drop0(x=X, tol=1e-15)
+		 * d<-Diagonal(x=1/sqrt(colSums(X^2)))
+		 * X <- X %*% d #normalizing all documents vector to unit size
+		 * rm(d)
+		 * Sims <- crossprod(X)
 		 */
 	}
+
 }

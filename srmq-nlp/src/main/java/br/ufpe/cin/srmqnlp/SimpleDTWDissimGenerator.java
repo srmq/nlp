@@ -1,6 +1,8 @@
 package br.ufpe.cin.srmqnlp;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,13 +10,17 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.rosuda.REngine.REXP;
 import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 
+import com.google.common.base.Optional;
+
 public class SimpleDTWDissimGenerator {
+	public static final String RSERVE_CONFIG_FILE = System.getProperty("user.dir") + File.separator + "Rserv.conf";
 	private static Map<String, String[]> customDistFunctions;
 	// accepted distances: everything R (Euclidian, cosine...); meanWfIdfEuclidian, meanWfIdfCosineDist
 	static {
@@ -83,6 +89,23 @@ public class SimpleDTWDissimGenerator {
 '
 fun <- cxxfunction(signature(a = "numeric", b = "numeric"), src, plugin="Rcpp")
  */
+
+public static Map<String, String> parseRConfFile(File rServeConfFile) throws IOException {
+	final Map<String, String> ret = new HashMap<String, String>();
+	try (BufferedReader bufReader = new BufferedReader(new FileReader(rServeConfFile))) {
+		String line;
+		while ((line = bufReader.readLine()) != null) {
+			line = line.trim();
+			if (line.startsWith("#"))
+				continue;
+			final StringTokenizer strTok = new StringTokenizer(line);
+			final String key = strTok.nextToken();
+			final String value = (strTok.hasMoreTokens()) ? strTok.nextToken() : "";
+			ret.put(key, value);
+		}
+	}
+	return ret;
+}
 	
 public static void main(String[] args) throws IOException, REXPMismatchException, REngineException {
 	if (args.length < 1 || args.length > 3) {
@@ -100,6 +123,16 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 		
 	}
 	final String distanceFunction = (args.length == 1) ? "Euclidean" : args[1];
+	
+	File rServeConfFile = new File(RSERVE_CONFIG_FILE);
+	System.err.println("Rserve conf should be at " + rServeConfFile.getAbsolutePath());
+	Optional<Integer> rServePort = Optional.absent();
+	if (rServeConfFile.exists()) {
+		Map<String, String> rServeOptions = parseRConfFile(rServeConfFile);
+		if (rServeOptions.containsKey("port")) {
+			rServePort = Optional.of(Integer.parseInt(rServeOptions.get("port")));
+		}
+	}
 	
 	
 	
@@ -135,7 +168,15 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 	TokenIndexDocumentProcessor docProcessor = new TokenIndexDocumentProcessor(CWEmbeddingWriter.UNK_WORD_ID);
 	TokenIndexDocumentProcessor.DFMapping dfMapping = null;
 	if (useCustomTfIdf) dfMapping = docProcessor.generateDFMapping(dfFile);
-	RConnection rConn = new RConnection();
+	RConnection rConn;
+	if (rServePort.isPresent()) {
+		rConn = new RConnection("localhost", rServePort.get());
+	} else {
+		rConn = new RConnection();
+	}
+	if (!rConn.isConnected()) {
+		throw new IllegalStateException("Could not connect to Rserve");
+	}
 	rConn.voidEval("library(\"dtw\")");
 	if (useCustomTfIdf) { 
 		rConn.voidEval("library(\"inline\")");

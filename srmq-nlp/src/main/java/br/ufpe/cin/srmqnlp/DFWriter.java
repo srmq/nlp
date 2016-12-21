@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 /**
@@ -17,6 +19,18 @@ import java.util.Set;
  *
  */
 public class DFWriter {
+	
+	private static void findFilesToProcess(File fileOrDirToProcess, List<File> filesToProcess) throws IOException {
+		if (fileOrDirToProcess.isDirectory()) {
+			File[] subFiles = fileOrDirToProcess.listFiles();
+			for (File file : subFiles) {
+				findFilesToProcess(file, filesToProcess);
+			}
+		} else {
+			filesToProcess.add(fileOrDirToProcess);
+		}
+	}
+	
 
 	public static void main(String[] args)  throws IOException  {
 		if (args.length != 1) {
@@ -33,7 +47,31 @@ public class DFWriter {
 			System.exit(-4);
 		}
 		Map<Integer, Integer> indexToDF = new HashMap<Integer, Integer>();
-		int filesSeen = recursiveProcess(baseInputPath, indexToDF);
+		int filesSeen = 0;
+
+		List<File> filesToProcess = new LinkedList<File>();
+		findFilesToProcess(baseInputPath, filesToProcess);
+		System.out.println("THE FILE LIST SIZE IS " + filesToProcess.size());
+		for (File file : filesToProcess) {
+			filesSeen++;
+			Set<Integer> ids = new HashSet<Integer>();
+			BufferedReader bufr = new BufferedReader(new FileReader(file));
+			String line;
+			while ((line = bufr.readLine()) != null) {
+				int index = Integer.parseInt(line);
+				ids.add(index);
+			}
+			for (Integer index : ids) {
+				if (indexToDF.containsKey(index)) {
+					final int docCount = indexToDF.get(index);
+					indexToDF.put(index, docCount+1);
+				} else {
+					indexToDF.put(index, 1);
+				}
+			}
+
+			bufr.close();
+		}
 		final int maxIndex = Collections.max(indexToDF.keySet());
 		System.out.println(filesSeen);
 		for (int i = 1; i <= maxIndex; i++) {
@@ -44,37 +82,4 @@ public class DFWriter {
 			}
 		}
 	}
-
-	private static int recursiveProcess(File baseInputPath, Map<Integer, Integer> indexToDF) throws IOException {
-		int filesSeen = 0;
-		File[] stuffToProcess = baseInputPath.listFiles();
-		for (File file : stuffToProcess) {
-			if (file.isDirectory()) {
-				filesSeen += recursiveProcess(file, indexToDF);
-			} else if (file.isFile()){
-				Set<Integer> ids = new HashSet<Integer>();
-				++filesSeen;
-				BufferedReader bufr = new BufferedReader(new FileReader(file));
-				String line;
-				while ((line = bufr.readLine()) != null) {
-					int index = Integer.parseInt(line);
-					ids.add(index);
-				}
-				for (Integer index : ids) {
-					if (indexToDF.containsKey(index)) {
-						final int docCount = indexToDF.get(index);
-						indexToDF.put(index, docCount+1);
-					} else {
-						indexToDF.put(index, 1);
-					}
-				}
-
-				bufr.close();
-			} else {
-				throw new IllegalStateException("Found something that is not a file nor a directory");
-			}
-		}
-		return filesSeen;
-	}
-
 }

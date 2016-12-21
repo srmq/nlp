@@ -6,6 +6,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Locale;
 
+import br.cin.ufpe.nlp.api.transform.DocumentProcessor;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.process.PTBTokenizer.PTBTokenizerFactory;
 import edu.stanford.nlp.process.Tokenizer;
@@ -14,7 +15,7 @@ import edu.stanford.nlp.process.Tokenizer;
  * Hello world!
  *
  */
-public class CWEmbeddingWriter 
+public class CWEmbeddingWriter implements DocumentProcessor
 {
 	public static final String SENNA_PATH = "/home/srmq/devel/senna"; 
 	public static final String CW_EMBEDDINGS = SENNA_PATH + "/embeddings/embeddings.txt";
@@ -29,7 +30,7 @@ public class CWEmbeddingWriter
     	this.vocab = new Vocabulary(new File(CW_WORDS));		
 	}
 	
-    public void cwIndicesForDocument(Reader inputDocument, Writer outputIndices) throws IOException {
+    public void processDocument(Reader inputDocument, Writer outputIndices) throws IOException {
     	for (Tokenizer<CoreLabel> tokenizer = PTBTokenizerFactory.newCoreLabelTokenizerFactory("").getTokenizer(inputDocument);
     			tokenizer.hasNext();) {
     		CoreLabel token = tokenizer.next();
