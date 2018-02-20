@@ -8,6 +8,9 @@ import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.Rserve.RConnection;
 import org.rosuda.REngine.Rserve.RserveException;
 
+import br.cin.ufpe.nlp.util.EnStopWords;
+import br.cin.ufpe.nlp.util.Vocabulary;
+
 public class RDTWAlignments {
 public static void main(String[] args) throws RserveException, REXPMismatchException, IOException {
 	RConnection c = new RConnection();

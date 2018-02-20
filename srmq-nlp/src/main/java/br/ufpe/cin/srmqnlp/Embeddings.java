@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.StringTokenizer;
 
+import br.cin.ufpe.nlp.util.Vocabulary;
+
 public class Embeddings {
 	private Vocabulary vocab;
 	private float[][] embeds;

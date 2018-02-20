@@ -1,13 +1,7 @@
 package br.ufpe.cin.srmqnlp;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import br.cin.ufpe.nlp.api.transform.DocumentProcessor;
 import br.cin.ufpe.nlp.util.RecursiveTransformer;

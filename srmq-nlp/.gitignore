@@ -3,3 +3,6 @@
 /target
 /.settings
 /.directory
+/experiments/
+/src/main/R/.Rhistory
+/src/main/R/.directory

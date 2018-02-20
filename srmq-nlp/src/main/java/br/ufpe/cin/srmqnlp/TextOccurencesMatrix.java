@@ -40,12 +40,64 @@ public class TextOccurencesMatrix extends TextFilesToMatrix {
 		 * final String elementListFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT10-LSA/reuters21578-RT10-OccurMatrix-Elements.txt";
 		 */
 
-		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/sennaIndices/top11MinusEarn";
-		final String outFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix.txt";
-		final String elementListFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix-Elements.txt";
+// Reuters21578 com senna indices
+//		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/sennaIndices/top11MinusEarn";
+//		final String outFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix.txt";
+//		final String elementListFile = "/home/srmq/git/nlp/srmq-nlp/experiments/dtw201609/reuters21578-RT11MinusEarn-LSA/reuters21578-RT11MinusEarn-OccurMatrix-Elements.txt";
+
+		//20Newsgroups-sample10 com indices do proprio conjunto (todas as palavras)
+		/*
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/words";
+		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexWords-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexWords-OccurMatrix-Elements.txt";
+		*/
+
+		//20Newsgroups-sample10 LEMMAS com indices do proprio conjunto (todas os lemmas)
+		/*
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/lemmas";
+		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexLemmas-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexLemmas-OccurMatrix-Elements.txt";
+		*/
+		
+		//20Newsgroups-sample10 LEMMAS+POSTAG com indices do proprio conjunto
+		/*
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/lemmapos";
+		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexLemmaPOS-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/20newsSample10-MultilexLemmaPOS-OccurMatrix-Elements.txt";
+		*/
+
+		//ModApteTestWithBodySingleTopic WORDS com indices do proprio conjunto
+		/*
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/words";
+		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/words-extra/reuters21578-MultilexWORDS-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/words-extra/reuters21578-MultilexWORDS-OccurMatrix-Elements.txt";
+		*/
+		
+		//Reuters SuperSenses
+		/*
+		final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/ssenses";
+		final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/ssenses-extra/reuters21578-MultilexSSENSES-OccurMatrix.txt";
+		final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/reuters21578/ModApteTestWithBodySingleTopic/multilex-tokenization-indices/ssenses-extra/reuters21578-MultilexSSENSES-OccurMatrix-Elements.txt";
+		 */
+
+		
+		
+		final String basePath = System.getProperty("text.basepath");
+		if (basePath == null) throw new IllegalStateException("Property text.basepath is missing");
+		
+		final String outFile = System.getProperty("text.occurmatrix.outfile");
+		if (outFile == null) throw new IllegalStateException("Property text.occurmatrix.outfile is missing");
+		
+		final String elementListFile = System.getProperty("text.occurmatrix.elementsfile");
+		if (elementListFile == null) throw new IllegalStateException("Property text.occurmatrix.elementsfile is missing");
+		
+		
+
 		int vocabSize;
 		{
-			final String vocab = "/home/srmq/devel/senna/hash/words.lst";
+			//SENNA final String vocab = "/home/srmq/devel/senna/hash/words.lst";
+			final String vocab = System.getProperty("text.wordlist");
+			if (vocab == null) throw new IllegalStateException("Property text.wordlist is missing");
 			BufferedReader bufR = new BufferedReader(new FileReader(vocab));
 			vocabSize = 0;
 			while(bufR.readLine() != null) vocabSize++;

@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.Matrix;
@@ -34,24 +37,26 @@ public abstract class TextFilesToMatrix {
 	
 	protected int vocabSize;
 	
+	private File basePath;
+	
+	public TextFilesToMatrix(File basePath, int vocabSize) throws IOException {
+		this(basePath, vocabSize, false);
+	}
+	
 	/**
 	 * 
 	 * @param vocabSize the number of words in the vocabulary. Indices are assumed to be from 1 to <code>vocabSize</code>
 	 */
-	public TextFilesToMatrix(File basePath, int vocabSize) throws IOException {
+	protected TextFilesToMatrix(File basePath, int vocabSize, boolean lazy) throws IOException {
+		this.basePath = basePath;
 		this.vocabSize = vocabSize;
 		this.docToIndices = new HashMap<String, Integer>();
-		computeMatrix(basePath, vocabSize);
+		if(!lazy) {
+			computeMatrix();
+		}
 	}
 
-	/**
-	 * 
-	 * @param basePath indices text files are in this path (or subdirs of it)
-	 * @param vocabSize the number of words in the vocabulary. Indices are assumed to be from 1 to <code>vocabSize</code>
-	 * @return
-	 * @throws IOException 
-	 */
-	private void computeMatrix(File basePath, int vocabSize) throws IOException {
+	public void computeMatrix() throws IOException {
 		if(!basePath.isDirectory() || !basePath.canRead()) {
 			throw new IllegalArgumentException("basePath should be a readable directory");
 		}
@@ -61,16 +66,40 @@ public abstract class TextFilesToMatrix {
 		Collections.shuffle(filesToProcess, new Random(1));
 		SortedSet<String> groupNames = new TreeSet<String>();
 		List<String> fileGroups = new ArrayList<String>(filesToProcess.size());
-		this.mat = new LinkedSparseMatrix(vocabSize, filesToProcess.size());
+		this.mat = Matrices.synchronizedMatrix(new LinkedSparseMatrix(vocabSize, filesToProcess.size()));
+		final Matrix matToProcess = this.mat;
 		{
-			int col = 0;
-			for (File f : filesToProcess) {
-				final String fileGroupName = extractGroupName(f, groupNames);
-				fileGroups.add(fileGroupName);
-				this.docToIndices.put(f.getPath(), col);
-				processFile(f, mat, col);
-				col++;
+			ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			try {
+				int col = 0;
+				for (final File f : filesToProcess) {
+					final int currCol = col;
+					final String fileGroupName = extractGroupName(f, groupNames);
+					fileGroups.add(fileGroupName);
+					this.docToIndices.put(f.getPath(), col);
+					exec.submit(new Runnable() {
+						@Override
+						public void run() {
+							try {
+								System.out.println("Processing column " + currCol);
+								processFile(f, matToProcess, currCol);
+							} catch (IOException e) {
+								throw new IllegalStateException("Error processing file " + f.getName(), e);
+							}						
+						}
+					});
+					col++;
+				}
+			} finally {
+				exec.shutdown();
+				try {
+					exec.awaitTermination(100, TimeUnit.DAYS);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+					throw new IllegalStateException("Could not process files", e);
+				}
 			}
+			
 		}
 		Map<String, Integer> groupIndices = new HashMap<String, Integer>(groupNames.size());
 		{

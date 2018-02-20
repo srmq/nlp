@@ -2,17 +2,20 @@ package br.ufpe.cin.srmqnlp;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithm;
+import org.carrot2.clustering.kmeans.BisectingKMeansClusteringAlgorithmDescriptor;
 import org.carrot2.core.Cluster;
 import org.carrot2.core.Controller;
 import org.carrot2.core.ControllerFactory;
@@ -20,43 +23,49 @@ import org.carrot2.core.Document;
 import org.carrot2.core.ProcessingResult;
 import org.carrot2.core.attribute.CommonAttributesDescriptor;
 
+import br.cin.ufpe.nlp.util.Pair;
 import wrdca.util.ConfusionMatrix;
 
 public class CarrotClustering {
 	
-	private int numberOfObjects;
+	private int n;
 	private String basePath;
-	private String dissimFile;
+	private String configFile;
+	private int numIteracoes;
+	private int k;
+	private int numPrioriClusters;
+	private List<File> inputFiles;
+	private File outputFile;
+	private int numInicializacao;
+
 	
-	public CarrotClustering(int numberOfObjects, String basePath, String dissimFile) {
-		this.numberOfObjects = numberOfObjects;
+	public CarrotClustering(String basePath, String configFile) throws IOException {
 		this.basePath = basePath;
-		this.dissimFile = dissimFile;
+		this.configFile = configFile;
+		readConfigFile(this.configFile);
 	}
 
 	public static void main(String[] args) throws IOException {
-		if (args.length != 3) {
-			System.err.println("Should give 3 arguments: numberOfObjects basePath dissimFile");
+		if (args.length != 2) {
+			System.err.println("Should give 2 arguments: basePath configFile");
 			System.exit(-1);
 		}
-		final int nObjects = Integer.parseInt(args[0]);
-		final String baseP = args[1];
-		final String dissimF = args[2];
-		CarrotClustering cClust = new CarrotClustering(nObjects, baseP, dissimF);
+		final String baseP = args[0];
+		final String configF = args[1];
+		CarrotClustering cClust = new CarrotClustering(baseP, configF);
 		cClust.cluster();
 		System.exit(0);
 
 	}
 	
 	public void cluster() throws IOException {
-		final int k = 20;
-		final int aPrioriNumber = 20;
-		Map<Document, String> docsAndIds = new HashMap<Document, String>(numberOfObjects);
+		Map<Document, String> docsAndIds = new HashMap<Document, String>(n);
 		BufferedReader bufr = null;
-		Map<String, Pair<Integer, String>> idDocument2IndexDocumentAndIdClass = new HashMap<String, Pair<Integer, String>>(numberOfObjects);
+		PrintStream outStream = new PrintStream(this.outputFile, "UTF-8");;
+		Map<String, Pair<Integer, String>> idDocument2IndexDocumentAndIdClass = new HashMap<String, Pair<Integer, String>>(n);
 		try {
-			bufr = new BufferedReader(new FileReader(this.dissimFile));
-			for (int i = 0; i < this.numberOfObjects; i++) {
+			bufr = new BufferedReader(new FileReader(this.inputFiles.get(0)));
+			for (int i = 0; i < this.n; i++) {
 				final String line = bufr.readLine();
 				StringTokenizer sttok = new StringTokenizer(line, "\"");
 				String idClass = sttok.nextToken();
@@ -76,43 +85,51 @@ public class CarrotClustering {
 				docsAndIds.put(carrotDocument,	docId);
 			}
 			long timeInMilis = System.currentTimeMillis();
-			final Controller controller = ControllerFactory.createSimple();
-			final Map<String, Object> attributes = new HashMap<String, Object>();
 			final Set<Document> docsToCluster = docsAndIds.keySet();
-			System.out.println("INFO: We have " + docsToCluster.size() + " documents to cluster");
-			attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsToCluster));
-			attributes.put("BisectingKMeansClusteringAlgorithm.clusterCount", k);
-			ProcessingResult result = controller.process(attributes, BisectingKMeansClusteringAlgorithm.class);
+			outStream.println("INFO: We have " + docsToCluster.size() + " documents to cluster");
+			List<Cluster> bestClusters = null;
+			double bestScore = -1;
+			
+			for (int init = 0; init < numInicializacao; init++) {
+				final Controller controller = ControllerFactory.createSimple();
+				final Map<String, Object> attributes = new HashMap<String, Object>();
+				attributes.put(CommonAttributesDescriptor.Keys.DOCUMENTS, new ArrayList<Document>(docsToCluster));
+				attributes.put(BisectingKMeansClusteringAlgorithmDescriptor.Keys.CLUSTER_COUNT, k);
+				attributes.put(BisectingKMeansClusteringAlgorithmDescriptor.Keys.USE_INITIAL_RANDOM_ASSIGNMENT, true);
+				if (this.numIteracoes > 0)
+					attributes.put(BisectingKMeansClusteringAlgorithmDescriptor.Keys.MAX_ITERATIONS, this.numIteracoes);
+				ProcessingResult result = controller.process(attributes, BisectingKMeansClusteringAlgorithm.class);
+				List<Cluster> clusters = result.getClusters();
+				double myScore;
+				if ((myScore = totalSimilarity(clusters)) > bestScore) {
+					bestClusters = clusters;
+					bestScore = myScore;
+				}
+				outStream.println("INFO: Run number " + init + ", score: " + myScore);
+			}
 			timeInMilis = System.currentTimeMillis() - timeInMilis;
-			List<Cluster> clusters = result.getClusters();
 			//CarrotConsoleFormatter.displayClusters(clusters);
 			int docCount = 0;
-			ConfusionMatrix confusionMatrix = new ConfusionMatrix(k, aPrioriNumber);
-			for (int i = 0; i < clusters.size(); i++) {
-				final Cluster clusterI = clusters.get(i);
+			ConfusionMatrix confusionMatrix = new ConfusionMatrix(k, numPrioriClusters);
+			for (int i = 0; i < bestClusters.size(); i++) {
+				final Cluster clusterI = bestClusters.get(i);
 				if (clusterI.getSubclusters() != null && clusterI.getSubclusters().size() > 0) {
-					System.out.println("INFO: Cluster " + i + " has subclusters");
+					outStream.println("INFO: Cluster " + i + " has subclusters");
 				}
-				System.out.println("Cluster " + i + ":");
-				System.out.println(clusterI.getLabel());
+				outStream.println("Cluster " + i + ":");
+				outStream.println(clusterI.getLabel());
 				List<Document> docs = clusterI.getAllDocuments();
 				docCount += docs.size();
 				for (Document document : docs) {
 					final String docId = docsAndIds.get(document);
 					final Pair<Integer, String> myDocumentIdAndClassId = idDocument2IndexDocumentAndIdClass.get(docId);
 					confusionMatrix.putObject(myDocumentIdAndClassId.getFirst(), i, Integer.parseInt(myDocumentIdAndClassId.getSecond()));
-					System.out.println(docId);
+					outStream.println(docId);
 				}
-				System.out.println("");
+				outStream.println("");
 			}
-			System.out.println("Total document count in clusters: " + docCount);
-			PrintStream outStream;
-			/*if (runner.outputFile == null) {
-				outStream = System.out;
-			} else {
-				outStream = new PrintStream(runner.outputFile, "UTF-8");
-			}*/
-			outStream = System.out;
+			outStream.println("Total document count in clusters: " + docCount);
+			outStream.println("Best score was: " + bestScore);
 			outStream.println("------CONFUSION MATRIX-------");
 			confusionMatrix.printMatrix(outStream);
 			outStream.println("-----------------------------");
@@ -122,6 +139,7 @@ public class CarrotClustering {
 			outStream.println(">>>>>>>>>>>> NMI  Index    is: " + confusionMatrix.nMIIndex());;
 			outStream.println("Total time in seconds: " + timeInMilis/1000.0);
 			outStream.flush();
+			outStream.close();
 			System.exit(0);
 
 			
@@ -130,5 +148,43 @@ public class CarrotClustering {
 		}
 		
 	}
+	
+	private double totalSimilarity(List<Cluster> clusters) {
+		double sum = 0.0;
+		for (Cluster cluster : clusters) {
+			sum += cluster.getScore();
+		}
+		return sum;
+	}
+
+	private void readConfigFile(String file)
+			throws FileNotFoundException, IOException {
+		File configFile = new File(file);
+		BufferedReader bufw = new BufferedReader(new FileReader(configFile));
+		String line;
+		while ((line = bufw.readLine()) != null) {
+			if (line.contains("(numCluster)")) {
+				k = Integer.parseInt(bufw.readLine());
+			} else if (line.contains("(numInicializacao)")) {
+				numInicializacao = Integer.parseInt(bufw.readLine());
+			} else if (line.contains("(numIteracoes)")) {
+				numIteracoes = Integer.parseInt(bufw.readLine());
+			} else if (line.contains("(input)")) {
+				inputFiles = new LinkedList<File>();
+				while ((line = bufw.readLine()).length() > 0) {
+					inputFiles.add(new File(line));
+				}
+			} else if (line.contains("(output)")) {
+				outputFile = new File(bufw.readLine());
+			} else if (line.contains("(numIndividuos)")) {
+				n = Integer.parseInt(bufw.readLine());
+			} else if (line.contains("(numPrioriClusters)")) {
+				numPrioriClusters = Integer.parseInt(bufw.readLine());
+			}
+		}
+		
+		bufw.close();
+	}
+	
 
 }

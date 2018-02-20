@@ -2,20 +2,13 @@ package br.ufpe.cin.srmqnlp;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.util.Locale;
-
-import br.cin.ufpe.nlp.api.transform.DocumentProcessor;
-import edu.stanford.nlp.ling.CoreLabel;
-import edu.stanford.nlp.process.PTBTokenizer.PTBTokenizerFactory;
-import edu.stanford.nlp.process.Tokenizer;
 
 /**
  * Hello world!
  *
  */
-public class CWEmbeddingWriter implements DocumentProcessor
+public class CWEmbeddingWriter extends WordsToIndexBaseProcessor
 {
 	public static final String SENNA_PATH = "/home/srmq/devel/senna"; 
 	public static final String CW_EMBEDDINGS = SENNA_PATH + "/embeddings/embeddings.txt";
@@ -24,26 +17,8 @@ public class CWEmbeddingWriter implements DocumentProcessor
 	public static final int UNK_WORD_ID = 2;
 	
 	private static final Locale locale = Locale.ENGLISH;
-	private Vocabulary vocab;
 	
 	public CWEmbeddingWriter() throws IOException {
-    	this.vocab = new Vocabulary(new File(CW_WORDS));		
+		super(new File(CW_WORDS), UNK_WORD_ID, locale);
 	}
-	
-    public void processDocument(Reader inputDocument, Writer outputIndices) throws IOException {
-    	for (Tokenizer<CoreLabel> tokenizer = PTBTokenizerFactory.newCoreLabelTokenizerFactory("").getTokenizer(inputDocument);
-    			tokenizer.hasNext();) {
-    		CoreLabel token = tokenizer.next();
-    		String tokenString = token.toString().toLowerCase(locale);
-    		Integer id = this.vocab.getId(tokenString);
-    		if (id == null) {
-    			id = UNK_WORD_ID;
-    		}
-    		outputIndices.write(id.toString());
-    		outputIndices.write('\n');
-    	}
-    	outputIndices.flush();
-    }
-    
-    
 }

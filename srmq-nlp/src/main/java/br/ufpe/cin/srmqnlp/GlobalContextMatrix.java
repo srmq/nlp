@@ -58,10 +58,20 @@ public class GlobalContextMatrix extends TextFilesToMatrix {
 		/**
 		 * 20newsgroups-sample Mikolov RNN 1600 vectors
 		 */
+		/*
 		 final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-MikolovRNN1600Vec";
 		 final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-MikolovRNN1600Vec-Matrix.txt";
 		 final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-MikolovRNN1600Vec-Matrix-Elements.txt";
 		 final int embedSize = 1600;
+		*/
+		 /*
+		  * 20newsgroups-sample10 Glove SSense Context
+		  */ 
+		 final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-glove-ssensecontext";
+		 final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-Glove-SSenseContextMatrix.txt";
+		 final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-Glove-SSenseContextMatrix-Elements.txt";
+		 final int embedSize = 300;
+		 
 		
 		
 		 //final int embedSize = 300;

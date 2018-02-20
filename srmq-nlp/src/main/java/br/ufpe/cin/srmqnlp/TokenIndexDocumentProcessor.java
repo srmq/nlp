@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import br.cin.ufpe.nlp.util.EnStopWords;
+
 public class TokenIndexDocumentProcessor {
 	private int unknownWordId;
 	

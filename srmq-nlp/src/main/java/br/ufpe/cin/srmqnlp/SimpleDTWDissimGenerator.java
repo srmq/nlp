@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
 
 import org.rosuda.REngine.REXP;
@@ -17,7 +18,8 @@ import org.rosuda.REngine.REXPMismatchException;
 import org.rosuda.REngine.REngineException;
 import org.rosuda.REngine.Rserve.RConnection;
 
-import com.google.common.base.Optional;
+import br.cin.ufpe.nlp.util.EnStopWords;
+import br.cin.ufpe.nlp.util.Vocabulary;
 
 public class SimpleDTWDissimGenerator {
 	public static final String RSERVE_CONFIG_FILE = System.getProperty("user.dir") + File.separator + "Rserv.conf";
@@ -126,7 +128,7 @@ public static void main(String[] args) throws IOException, REXPMismatchException
 	
 	File rServeConfFile = new File(RSERVE_CONFIG_FILE);
 	System.err.println("Rserve conf should be at " + rServeConfFile.getAbsolutePath());
-	Optional<Integer> rServePort = Optional.absent();
+	Optional<Integer> rServePort = Optional.empty();
 	if (rServeConfFile.exists()) {
 		Map<String, String> rServeOptions = parseRConfFile(rServeConfFile);
 		if (rServeOptions.containsKey("port")) {

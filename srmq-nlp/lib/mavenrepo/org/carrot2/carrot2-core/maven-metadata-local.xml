@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.carrot2</groupId>
+  <artifactId>carrot2-core</artifactId>
+  <versioning>
+    <versions>
+      <version>3.16.0srmq-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20170526134915</lastUpdated>
+  </versioning>
+</metadata>
