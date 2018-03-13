@@ -66,15 +66,39 @@ public class GlobalContextMatrix extends TextFilesToMatrix {
 		*/
 		 /*
 		  * 20newsgroups-sample10 Glove SSense Context
-		  */ 
+		  */
+		/*
 		 final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-glove-ssensecontext";
 		 final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-Glove-SSenseContextMatrix.txt";
 		 final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-sample10-Glove-SSenseContextMatrix-Elements.txt";
 		 final int embedSize = 300;
-		 
+		 */
+
+			 /*
+			  * webkb-prepared Glove SSense Context
+			  */
+		/*
+			 final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/webkb-prepared-ssensecontext-glove";
+			 final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/webkb-prepared-Glove-SSenseContextMatrix.txt";
+			 final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/webkb-prepared-Glove-SSenseContextMatrix-Elements.txt";
+			 final int embedSize = 300;
+		 */
+			 /*
+			  * 20newsgroups Glove SSense Context
+			  */ /*
+			 final String basePath = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-ssensecontext-glove";
+			 final String outFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-Glove-SSenseContextMatrix.txt";
+			 final String elementListFile = "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-Glove-SSenseContextMatrix-Elements.txt";
+			 final int embedSize = 300;
+		 */
 		
+		 if (args.length != 4) throw new IllegalArgumentException("Should pass 4 arguments: (1) base path for supersense contexts for docs; (2) output file name; (3) output element list file; (4) length of embeddings used in contexts");
+		 final String basePath = args[0];
+		 final String outFile = args[1];
+		 final String elementListFile = args[2];
+		 final int embedSize = Integer.parseInt(args[3]);
 		
-		 //final int embedSize = 300;
+
 		 GlobalContextMatrix gcMatrix = new GlobalContextMatrix(new File(basePath), embedSize);
 		 gcMatrix.printOutputMatrix(outFile);
 		 gcMatrix.printElementList(elementListFile);

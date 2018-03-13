@@ -1,9 +1,9 @@
 library(Matrix)
 
-ndocs <- 19997
+ndocs <- 7016
 nfeat <- 300
 
-featureData <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-Glove-SSenseContextMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
+featureData <- read.table("/home/srmq/Documents/Research/textmining/devel/data/reuters21578-R8-Glove-SSenseContextMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
 
 featureDataMatrix <- sparseMatrix(i=featureData$row, j=featureData$col, x=featureData$val, dims=c(nfeat, ndocs))
 
@@ -22,4 +22,5 @@ distAsMatrix <- as.matrix(distM)
 distAsMatrix <- distAsMatrix/max(distAsMatrix)
 DissimsExport <- as(distAsMatrix, "sparseMatrix")
 
-writeMM(DissimsExport, file="/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-Glove-SSenseContext-Dissims.mtx")
+writeMM(DissimsExport, file="/home/srmq/Documents/Research/textmining/devel/data/reuters21578-R8-Glove-SSenseContextMatrix-Dissims.mtx")
+

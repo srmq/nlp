@@ -107,6 +107,7 @@ public class TextOccurencesMatrix extends TextFilesToMatrix {
 		TextOccurencesMatrix textMatrix = new TextOccurencesMatrix(new File(basePath), vocabSize);
 		textMatrix.printOutputMatrix(outFile);
 		textMatrix.printElementList(elementListFile);
+		System.exit(0);
 		/*
 		 * Exemplo lendo no R como data.frame: 
 		 * 

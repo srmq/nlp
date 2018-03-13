@@ -24,6 +24,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import no.uib.cipr.matrix.Matrices;
 import no.uib.cipr.matrix.Matrix;
@@ -33,6 +34,7 @@ import no.uib.cipr.matrix.sparse.LinkedSparseMatrix;
 public abstract class TextFilesToMatrix {
 	protected Map<String, Integer> docToIndices;
 	private Matrix mat;
+	private LinkedSparseMatrix implMat;
 	List<String> elements = new LinkedList<String>();
 	
 	protected int vocabSize;
@@ -66,10 +68,12 @@ public abstract class TextFilesToMatrix {
 		Collections.shuffle(filesToProcess, new Random(1));
 		SortedSet<String> groupNames = new TreeSet<String>();
 		List<String> fileGroups = new ArrayList<String>(filesToProcess.size());
-		this.mat = Matrices.synchronizedMatrix(new LinkedSparseMatrix(vocabSize, filesToProcess.size()));
+		this.implMat = new LinkedSparseMatrix(vocabSize, filesToProcess.size());
+		this.mat = Matrices.synchronizedMatrix(this.implMat);
 		final Matrix matToProcess = this.mat;
 		{
 			ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+			final AtomicInteger threadCount = new AtomicInteger(0);
 			try {
 				int col = 0;
 				for (final File f : filesToProcess) {
@@ -77,6 +81,7 @@ public abstract class TextFilesToMatrix {
 					final String fileGroupName = extractGroupName(f, groupNames);
 					fileGroups.add(fileGroupName);
 					this.docToIndices.put(f.getPath(), col);
+					threadCount.incrementAndGet();
 					exec.submit(new Runnable() {
 						@Override
 						public void run() {
@@ -85,22 +90,26 @@ public abstract class TextFilesToMatrix {
 								processFile(f, matToProcess, currCol);
 							} catch (IOException e) {
 								throw new IllegalStateException("Error processing file " + f.getName(), e);
-							}						
+							} finally {
+								threadCount.decrementAndGet();
+							}
 						}
 					});
 					col++;
 				}
 			} finally {
 				exec.shutdown();
-				try {
-					exec.awaitTermination(100, TimeUnit.DAYS);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-					throw new IllegalStateException("Could not process files", e);
+				while (threadCount.get() > 0) {
+					try {
+						System.out.println("Awaiting for processing to finish. Still has " + threadCount.get());
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 			}
-			
 		}
+		System.out.println("Now printing the Matrices");
 		Map<String, Integer> groupIndices = new HashMap<String, Integer>(groupNames.size());
 		{
 			int i = 0;
@@ -145,10 +154,11 @@ public abstract class TextFilesToMatrix {
 	        out.format("%10d %10d %19d\n", this.mat.numRows(), this.mat.numColumns(),
 	                Matrices.cardinality(this.mat));
 
-	        for (MatrixEntry e : this.mat) {
-	            if (e.get() != 0)
+	        for (MatrixEntry e : this.implMat) {
+	        	final double val = e.get();
+	            if (val != 0)
 	                out.format("%10d %10d % .12e\n", e.row() + 1, e.column() + 1,
-	                        e.get());
+	                        val);
 	        }
 	        out.flush();
 			out.close();
@@ -174,7 +184,10 @@ public abstract class TextFilesToMatrix {
 				findFilesToProcess(file, filesToProcess);
 			}
 		} else {
-			filesToProcess.add(fileOrDirToProcess);
+			//ignore files on basepath directory
+			if(!fileOrDirToProcess.getCanonicalFile().getParent().equals(this.basePath.getCanonicalPath())) {
+				filesToProcess.add(fileOrDirToProcess);				
+			}
 		}
 	}
 	

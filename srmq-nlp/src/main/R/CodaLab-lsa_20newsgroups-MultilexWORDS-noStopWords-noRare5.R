@@ -1,18 +1,18 @@
 library(Matrix)
 library(irlba)
 
-ndocs <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-multilex-indices/words/df.txt", header=FALSE, nrows=1, colClasses=c("numeric"))
+ndocs <- read.table("df.txt", header=FALSE, nrows=1, colClasses=c("numeric"))
 
 ndocs <- ndocs[1, 1]
 
-wordListFile <- "/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-multilex-indices/words/words.lst"
+wordListFile <- "words.lst"
 
 con <- file(wordListFile)
 sizeInitialVocab <- length(readLines(con))
 close(con)
 rm(con)
 
-newsgroupSampleData <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-multilex-indices/20_newsgroups-noheaders-MultilexWORDS-OccurMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
+newsgroupSampleData <- read.table("20_newsgroups-noheaders-MultilexWORDS-OccurMatrix.txt", header=FALSE, colClasses=c("integer", "integer", "numeric"), col.names=c("row", "col", "val"), skip=1)
 
 newsgroupSampleData$val <- log(newsgroupSampleData$val)
 
@@ -21,7 +21,7 @@ newsSampleMatrix <- sparseMatrix(i=newsgroupSampleData$row, j=newsgroupSampleDat
 
 rm(newsgroupSampleData)
 
-dfTable <- read.table("/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-multilex-indices/words/df.txt", header=FALSE, skip=1, colClasses=c("numeric"))
+dfTable <- read.table("df.txt", header=FALSE, skip=1, colClasses=c("numeric"))
 df <- rep(0, sizeInitialVocab)
 df[1:sizeInitialVocab] <- dfTable[,1]
 rm(dfTable)
@@ -46,7 +46,7 @@ stopWords <- c("a", "about", "across", "after", "all", "almost", "also",
 
 wordList <- readLines(wordListFile)
 
-stopPos <- sapply(1:length(wordList), function(i) (wordList[i] %in% stopWords) | (df[i] < 3))
+stopPos <- sapply(1:length(wordList), function(i) (wordList[i] %in% stopWords) | (df[i] < 5))
 
 df <- df[!stopPos]
 
@@ -55,7 +55,11 @@ numFeatures <- length(df)
 newsSampleMatrix <- newsSampleMatrix[!stopPos,]
 
 df <- ifelse(df != 0, log(ndocs/df), 0)
-for(i in 1:length(df)) {
+lenDf <- length(df)
+for(i in 1:lenDf) {
+    if ((i %% 100) == 0) {
+        message("Processing word ", i, " of ", lenDf)
+    }
     if(df[i] != 0) {
         newsSampleMatrix[i,] <- newsSampleMatrix[i,]*df[i]
     }
@@ -81,4 +85,4 @@ Sims <- Sims/maxSim
 Dissims <- 1 - Sims
 diag(Dissims) <- 0
 DissimsExport <- as(Dissims, "sparseMatrix")
-writeMM(DissimsExport, file="/home/srmq/Documents/Research/textmining/devel/data/20_newsgroups-noheaders-sample10-multilex-indices/words-extra/20newsgroups-sample10-MultilexWORDS-NoStopW-noRare3-lsa50-Dissims.mtx")
+writeMM(DissimsExport, file="20newsgroups-noheaders-MultilexWORDS-NoStopW-noRare5-lsa50-Dissims.mtx")
