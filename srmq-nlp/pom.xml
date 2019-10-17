@@ -8,7 +8,26 @@
 	<packaging>jar</packaging>
 
 	<name>srmq-nlp</name>
-	<url>http://maven.apache.org</url>
+	<url>https://github.com/srmq/nlp</url>
+	
+	<licenses>
+		<license>
+			<name>GNU General Public License, Version 3 or later</name>
+			<url>http://www.gnu.org/licenses/gpl-3.0.html</url>
+			<distribution>manual</distribution>
+			<comments>A free, strong copyleft license for software and other kinds of works</comments>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<email>srmq@cin.ufpe.br</email>
+			<name>Sergio Queiroz</name>
+			<url>https://github.com/srmq</url>
+			<id>srmq</id>
+		</developer>
+	</developers>
+	
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,8 +40,23 @@
                 <id>project-repo</id>
                 <url>file://${project.basedir}/lib/mavenrepo</url>
         </repository>
+		<repository>
+			<releases>
+				<enabled>false</enabled>
+				<updatePolicy>always</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>always</updatePolicy>
+				<checksumPolicy>fail</checksumPolicy>
+			</snapshots>
+			<id>srmq-maven-repo</id>
+			<name>SRMQ's development repository</name>
+			<url>https://srmq-maven-repo.appspot.com</url>
+			<layout>default</layout>
+		</repository>
      </repositories>
-
 
 	<dependencies>
 		<dependency>
